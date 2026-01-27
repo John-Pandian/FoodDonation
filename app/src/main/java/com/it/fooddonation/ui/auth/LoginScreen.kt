@@ -56,12 +56,17 @@ import com.it.fooddonation.ui.theme.PrimaryLight
 fun LoginScreen(
     onLoginClick: (String, String) -> Unit,
     onRegisterClick: () -> Unit,
+    onForgotPasswordClick: () -> Unit,
     isLoading: Boolean = false,
     errorMessage: String? = null
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+
+    // Check if error message is about email verification
+    val isEmailVerificationError = errorMessage?.contains("verify your email", ignoreCase = true) == true ||
+                                   errorMessage?.contains("confirm your account", ignoreCase = true) == true
 
     Column(
         modifier = Modifier
@@ -178,7 +183,9 @@ fun LoginScreen(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Primary,
-                modifier = Modifier.padding(vertical = 4.dp)
+                modifier = Modifier
+                    .clickable(enabled = !isLoading, onClick = onForgotPasswordClick)
+                    .padding(vertical = 4.dp)
             )
         }
 
@@ -186,22 +193,39 @@ fun LoginScreen(
 
         // Error Message
         if (errorMessage != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Email Verification Help
+                if (isEmailVerificationError) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Didn't receive the email? Check your spam folder or contact support.",
+                        fontSize = 12.sp,
+                        color = Color(0xFF6B7280),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }

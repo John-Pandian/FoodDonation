@@ -61,9 +61,14 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var fullName by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf(UserRole.DONOR) }
 
     val scrollState = rememberScrollState()
+
+    // Check if message is a success message
+    val isSuccessMessage = errorMessage?.contains("Registration successful", ignoreCase = true) == true ||
+                          errorMessage?.contains("check your email", ignoreCase = true) == true
 
     Column(
         modifier = Modifier
@@ -165,6 +170,18 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Phone Number
+        MinimalTextField(
+            value = phoneNumber,
+            onValueChange = { phoneNumber = it },
+            label = "Phone Number",
+            placeholder = "+91 98765 43210",
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            enabled = !isLoading
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         // Password
         MinimalTextField(
             value = password,
@@ -175,6 +192,12 @@ fun RegisterScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             enabled = !isLoading
         )
+
+        // Password Strength Indicator
+        if (password.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            PasswordStrengthIndicator(password = password)
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -220,20 +243,28 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Error Message
+        // Error/Success Message
         if (errorMessage != null) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                        color = if (isSuccessMessage) {
+                            Color(0xFF10B981).copy(alpha = 0.1f) // Green for success
+                        } else {
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                        },
                         shape = RoundedCornerShape(8.dp)
                     )
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 Text(
                     text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
+                    color = if (isSuccessMessage) {
+                        Color(0xFF059669) // Green for success
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
@@ -245,7 +276,7 @@ fun RegisterScreen(
         // Register Button
         Button(
             onClick = {
-                onRegisterClick(email, password, fullName, "", selectedRole)
+                onRegisterClick(email, password, fullName, phoneNumber, selectedRole)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -255,6 +286,7 @@ fun RegisterScreen(
                     password.isNotBlank() &&
                     confirmPassword.isNotBlank() &&
                     fullName.isNotBlank() &&
+                    phoneNumber.isNotBlank() &&
                     password == confirmPassword,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Primary,
@@ -359,5 +391,152 @@ fun SegmentedControl(
                 color = if (selectedRole == UserRole.RECEIVER) Color.White else Color(0xFF6B7280)
             )
         }
+    }
+}
+
+enum class PasswordStrength(val label: String, val color: Color) {
+    WEAK("Weak", Color(0xFFEF4444)),
+    FAIR("Fair", Color(0xFFF59E0B)),
+    GOOD("Good", Color(0xFF3B82F6)),
+    STRONG("Strong", Color(0xFF10B981))
+}
+
+fun calculatePasswordStrength(password: String): PasswordStrength {
+    var score = 0
+
+    // Length check
+    when {
+        password.length >= 12 -> score += 2
+        password.length >= 8 -> score += 1
+    }
+
+    // Contains lowercase
+    if (password.any { it.isLowerCase() }) score += 1
+
+    // Contains uppercase
+    if (password.any { it.isUpperCase() }) score += 1
+
+    // Contains digit
+    if (password.any { it.isDigit() }) score += 1
+
+    // Contains special character
+    if (password.any { !it.isLetterOrDigit() }) score += 1
+
+    return when {
+        score <= 2 -> PasswordStrength.WEAK
+        score <= 4 -> PasswordStrength.FAIR
+        score <= 5 -> PasswordStrength.GOOD
+        else -> PasswordStrength.STRONG
+    }
+}
+
+@Composable
+fun PasswordStrengthIndicator(
+    password: String,
+    modifier: Modifier = Modifier
+) {
+    val strength = calculatePasswordStrength(password)
+
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        // Strength Bars
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            repeat(4) { index ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(4.dp)
+                        .background(
+                            color = when {
+                                index < strength.ordinal + 1 -> strength.color
+                                else -> Color(0xFFE5E7EB)
+                            },
+                            shape = RoundedCornerShape(2.dp)
+                        )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Strength Label and Requirements
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Password Strength: ${strength.label}",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = strength.color
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Password Requirements
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            PasswordRequirement(
+                text = "At least 8 characters",
+                isMet = password.length >= 8
+            )
+            PasswordRequirement(
+                text = "Contains uppercase & lowercase",
+                isMet = password.any { it.isUpperCase() } && password.any { it.isLowerCase() }
+            )
+            PasswordRequirement(
+                text = "Contains number",
+                isMet = password.any { it.isDigit() }
+            )
+            PasswordRequirement(
+                text = "Contains special character (!@#$%)",
+                isMet = password.any { !it.isLetterOrDigit() }
+            )
+        }
+    }
+}
+
+@Composable
+fun PasswordRequirement(
+    text: String,
+    isMet: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(16.dp)
+                .background(
+                    color = if (isMet) Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFE5E7EB),
+                    shape = RoundedCornerShape(8.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isMet) {
+                Text(
+                    text = "✓",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF10B981)
+                )
+            }
+        }
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            color = if (isMet) Color(0xFF059669) else Gray500
+        )
     }
 }

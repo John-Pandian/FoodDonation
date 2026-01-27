@@ -17,7 +17,8 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun HomeScreen(
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onDonorDashboardClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -31,6 +32,13 @@ fun HomeScreen(
             text = "Welcome to Food Donation",
             style = MaterialTheme.typography.headlineMedium
         )
+
+        Button(
+            onClick = onDonorDashboardClick,
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            Text("Go to Donor Dashboard")
+        }
 
         Button(
             onClick = onLogout,

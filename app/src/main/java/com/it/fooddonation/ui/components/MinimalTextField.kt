@@ -26,7 +26,9 @@ fun MinimalTextField(
     modifier: Modifier = Modifier,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    minLines: Int = 1,
+    maxLines: Int = 1
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -50,7 +52,8 @@ fun MinimalTextField(
             visualTransformation = visualTransformation,
             keyboardOptions = keyboardOptions,
             enabled = enabled,
-            singleLine = true,
+            minLines = minLines,
+            maxLines = maxLines,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
