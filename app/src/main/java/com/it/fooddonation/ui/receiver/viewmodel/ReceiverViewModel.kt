@@ -5,9 +5,12 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.it.fooddonation.data.model.Donation
+import com.it.fooddonation.data.model.UserProfile
 import com.it.fooddonation.data.remote.SupabaseClient
 import com.it.fooddonation.data.repository.AuthRepository
 import com.it.fooddonation.data.repository.DonationRepository
+import com.it.fooddonation.data.service.EmailService
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
@@ -183,6 +186,26 @@ class ReceiverViewModel(
                             message = "$receiverName has accepted your donation",
                             donationId = donationId
                         )
+                    }
+
+                    // Send email notification to the donor (non-blocking)
+                    donation?.let { don ->
+                        viewModelScope.launch {
+                            try {
+                                val donorProfile = supabase.from("profiles")
+                                    .select { filter { eq("id", don.donorId) } }
+                                    .decodeSingle<UserProfile>()
+
+                                EmailService.sendDonationAcceptedEmail(
+                                    recipientEmail = donorProfile.email,
+                                    donorName = donorProfile.fullName ?: don.donorName,
+                                    receiverName = receiverName ?: "A receiver",
+                                    donation = don
+                                )
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Failed to send email notification: ${e.message}", e)
+                            }
+                        }
                     }
 
                     // Reload both lists
