@@ -18,8 +18,8 @@ object EmailService {
     private const val TAG = "EmailService"
 
     // TODO: Replace with your Gmail address and App Password
-    private const val SENDER_EMAIL = "email"
-    private const val APP_PASSWORD = "password"
+    private const val SENDER_EMAIL = "meetbagwe8155@gmail.com"
+    private const val APP_PASSWORD = "hxxc klnx rgfe rgqa"
 
     suspend fun sendDonationAcceptedEmail(
         recipientEmail: String,
